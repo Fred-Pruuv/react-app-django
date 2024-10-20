@@ -1,26 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../app/store';
+import { fetchItemsAsync } from '../features/itemsSlice';
 import { convertToMinutes } from '../components/convertToMinutes';
-import { fetchItems } from '../services/Api';
-
 
 export const ItemList: React.FC = () => {
-    const [items, setItems] = useState([]);
+    const dispatch = useDispatch<AppDispatch>();
+    const items = useSelector((state: RootState) => state.items.items);
+    const status = useSelector((state: RootState) => state.items.status);
+    const error = useSelector((state: RootState) => state.items.error);
 
     useEffect(() => {
-        const getItems = async () => {
-            try {
-                const data = await fetchItems();
-                setItems(data);
+        if (status === 'idle') {
+            dispatch(fetchItemsAsync());
+        }
+    }, [status, dispatch]);
 
-            } catch (error) {
-                console.error('Error fetching items:', error);
-            }
-        };
+    if (status === 'loading') {
+        return <div>Loading...</div>;
+    }
 
-        getItems();
-    }, []);
-
-    console.log('www',items);
+    if (status === 'failed') {
+        return <div>Error: {error}</div>;
+    }
 
     return (
         <div>
@@ -28,16 +30,17 @@ export const ItemList: React.FC = () => {
             <table className="styled-table">
                 <thead>
                     <tr>
-                    <td>Start Station</td>
-                    <td>End Station</td>
-                    <td>Trip Duration (mins)</td>
+                        <td>Start Station</td>
+                        <td>End Station</td>
+                        <td>Trip Duration (mins)</td>
                     </tr>
                 </thead>
                 <tbody>
-                    {items.map((item: any) => (
-                        <tr key={item.id}>
-                            <td>{item.start_station_name }</td>
-                            <td>{item.end_station_name }</td>
+                    {
+                    items.map((item: any) => (
+                        <tr key={item.trip_id}>
+                            <td>{item.start_station_name}</td>
+                            <td>{item.end_station_name}</td>
                             <td>{convertToMinutes(item.tripduration)}</td>
                         </tr>
                     ))}
